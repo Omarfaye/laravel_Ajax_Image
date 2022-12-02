@@ -139,7 +139,81 @@
 <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
 
-    //// ajouter une nouvelle requête ajax d'employé
+    //fetch all employees ajax request
+    fetchAllEmployees();
+
+    function fetchAllEmployees(){
+        $.ajax({
+            url: '{{ route('fetchAll')}}',
+            method: 'get',
+            success:function (res) {
+                //console.log(res)
+                $("#show_all_employees").html(res);
+                //Seul cette partie gere search,pagination...
+                $("table").DataTable({
+                    order: [0, 'desc']
+                });
+            }
+        });
+    }
+
+    //edit employee ajax id
+    $(document).on('click', '.editIcon', function(e) {
+        e.preventDefault();
+        let id = $(this).attr('id');
+       // console.log(id);
+        $.ajax({
+            url: '{{ route('edit') }}',
+            method: 'get',
+            data: {
+                id: id,
+                _token: '{{ csrf_token() }}'
+            },
+            success: function(response) {
+                console.log(response);
+                $("#fname").val(response.first_name);
+                $("#lname").val(response.last_name);
+                $("#email").val(response.email);
+                $("#phone").val(response.phone);
+                $("#post").val(response.post);
+                $("#avatar").html(
+                    `<img src="storage/images/${response.avatar}" width="100" class="img-fluid img-thumbnail">`);
+                $("#emp_id").val(response.id);
+                $("#emp_avatar").val(response.avatar);
+            }
+        });
+    });
+
+    //Modification employee requete ajax
+    $("#edit_employee_form").submit(function(e) {
+        e.preventDefault();
+        const fd = new FormData(this);
+        $("#edit_employee_btn").text('Updating...');
+        $.ajax({
+            url: '{{route('update')}}',
+            method: 'post',
+            data: fd,
+            cache: false,
+            contentType: false,
+            processData: false,
+            success:function (response){
+                console.log(response);
+                if (response.status === 200) {
+                    Swal.fire(
+                        'Updating!',
+                        'Employee Edded Successfully!',
+                        'success'
+                    )
+                    fetchAllEmployees();
+                }
+                $("#edit_employee_btn").text('Update Employee');
+                $("#edit_employee_form")[0].reset();
+                $("#editEmployeeModal").modal('hide');
+            }
+        });
+    });
+
+    // ajouter une nouvelle requête ajax d'employé
     $("#add_employee_form").submit(function(e) {
         e.preventDefault();
         const fd = new FormData(this);
@@ -158,9 +232,49 @@
                         'Employee Added Successfully!',
                         'success'
                     )
+                    fetchAllEmployees();
                 }
+                $("#add_employee_btn").text('Add Employee');
+                $("#add_employee_form")[0].reset();
+                $("#addEmployeeModal").modal('hide');
             }
         });
+    });
+
+    // delete employee ajax request
+    $(document).on('click', '.deleteIcon', function(e) {
+        e.preventDefault();
+        let id = $(this).attr('id');
+        let csrf = '{{ csrf_token() }}';
+        Swal.fire({
+            title: 'Are you sure?',
+            text: "You won't be able to revert this!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Yes, delete it!'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $.ajax({
+                    url: '{{ route('delete') }}',
+                    method: 'post',
+                    data: {
+                        id: id,
+                        _token: csrf
+                    },
+                    success: function(response) {
+                        console.log(response);
+                        Swal.fire(
+                            'Deleted!',
+                            'Your file has been deleted.',
+                            'success'
+                        )
+                        fetchAllEmployees();
+                    }
+                });
+            }
+        })
     });
 
 </script>
